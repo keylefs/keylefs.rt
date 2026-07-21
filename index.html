@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consola de Monitoreo - keylefs.rt</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Cargamos Chart.js para la línea temporal -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body data-theme="defecto">
+
+    <!-- CONTENEDOR PARA NOTIFICACIONES TOAST EN LA WEB -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- MENÚ LATERAL (SIDEBAR) -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>SISTEMA keylefs.rt</h3>
+            <button id="btn-close-sidebar" class="btn-close">✕</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="menu-title">Configuración de Alertas</li>
+            
+            <!-- INTERRUPTOR DE NOTIFICACIONES -->
+            <li class="menu-item-toggle">
+                <span>🔔 Notificaciones Web</span>
+                <label class="switch-container">
+                    <input type="checkbox" id="notification-toggle" checked>
+                    <span class="slider-switch"></span>
+                </label>
+            </li>
+
+            <li class="menu-separator"></li>
+            
+            <li class="menu-title">Herramientas Base</li>
+            <li><button id="btn-open-history" class="menu-btn-opt">📜 Historial de Alertas</button></li>
+            <li><button id="btn-open-limits" class="menu-btn-opt">⚙️ Límites de Alerta</button></li>
+            <li><button id="btn-open-calibration" class="menu-btn-opt">🔧 Calibrar Sensores</button></li>
+            <li><button id="btn-open-stats" class="menu-btn-opt">📊 Picos de Sesión</button></li>
+            <li><button id="btn-open-audio" class="menu-btn-opt">🔊 Alertas de Audio</button></li>
+            <li><button id="btn-open-export" class="menu-btn-opt">📥 Exportar Reporte CSV</button></li>
+            <li><button id="btn-open-guide" class="menu-btn-opt">📖 Guía de Hardware</button></li>
+            <li><button id="btn-open-kiosk" class="menu-btn-opt">📺 Modo Kiosko</button></li>
+            <li><button id="btn-open-about" class="menu-btn-opt">ℹ️ Acerca de la App</button></li>
+
+            <li class="menu-separator"></li>
+
+            <li class="menu-title">Utilidades Pro (Anteriores)</li>
+            <li><button id="btn-toggle-fullscreen" class="menu-btn-opt">🖥️ Pantalla Completa</button></li>
+            <li><button id="btn-open-averages" class="menu-btn-opt">📊 Promedios de Sesión</button></li>
+            <li><button id="btn-trigger-fault" class="menu-btn-opt" style="color: var(--neon-orange);">🔌 Simular Falla Crítica</button></li>
+            <li><button id="btn-test-push" class="menu-btn-opt">📬 Enviar Notif. Push</button></li>
+            <li><button id="btn-show-uptime" class="menu-btn-opt">⏱️ Tiempo Activo (Uptime)</button></li>
+            <li><button id="btn-export-chart" class="menu-btn-opt">📉 Guardar Gráfico (PNG)</button></li>
+
+            <li class="menu-separator"></li>
+
+            <!-- 🌟 7 NUEVAS OPCIONES DE MENÚ SÚPER ÚTILES 🌟 -->
+            <li class="menu-title">Nuevas Herramientas (Pro+)</li>
+            <li><button id="btn-open-pomodoro" class="menu-btn-opt">⏱️ Temporizador Pomodoro</button></li>
+            <li><button id="btn-open-notes" class="menu-btn-opt">📝 Block de Notas Rápido</button></li>
+            <li><button id="btn-export-json" class="menu-btn-opt">🔔 Exportar Alertas (JSON)</button></li>
+            <li><button id="btn-open-chartscale" class="menu-btn-opt">📉 Configurar Ejes Gráfico</button></li>
+            <li><button id="btn-open-ping" class="menu-btn-opt">🔌 Diagnóstico Ping</button></li>
+            <li><button id="btn-open-backup" class="menu-btn-opt">💾 Backup Configuración</button></li>
+            <li><button id="btn-open-scheduler" class="menu-btn-opt">📅 Programador Alarmas</button></li>
+
+            <li class="menu-separator"></li>
+
+            <li class="menu-title">Personalización y Estilo</li>
+            <li><button id="btn-open-theme-selector" class="menu-btn-opt">🎨 Color de Interfaz</button></li>
+            <li><button id="btn-open-font-selector" class="menu-btn-opt">✍️ Selector de Fuente</button></li>
+            <li><button id="btn-open-design-selector" class="menu-btn-opt">🏢 Diseños y Temas (10)</button></li>
+
+            <li class="menu-separator"></li>
+
+            <li class="menu-title">Controles Avanzados</li>
+            <li><button id="btn-clear-terminal" class="menu-btn-opt">🧹 Limpiar Historial</button></li>
+            <li><button id="btn-open-sampling" class="menu-btn-opt">📈 Tasa de Muestreo</button></li>
+            <li><button id="btn-toggle-saving" class="menu-btn-opt">💤 Modo Ahorro Energía</button></li>
+            <li><button id="btn-factory-reset" class="menu-btn-opt" style="border-color: rgba(255, 23, 68, 0.4); color: var(--neon-red);">🔄 Config. de Fábrica</button></li>
+        </ul>
+    </div>
+
+    <!-- MODAL: CONEXIONES -->
+    <div id="connection-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Vincular Dispositivo</h3>
+                <button id="btn-close-conn" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Elige el método para capturar datos reales:</p>
+            <div class="modal-options">
+                <button id="opt-usb" class="modal-btn">🔌 USB (Serial API)</button>
+                <button id="opt-bluetooth" class="modal-btn">⚡ Bluetooth BLE Real</button>
+                <div class="wifi-input-group">
+                    <p class="sub-label">Wi-Fi (IP del Sensor):</p>
+                    <input type="text" id="wifi-ip" placeholder="Ej: 192.168.1.150" value="192.168.1.150">
+                    <button id="opt-wifi" class="modal-btn wifi-connect-btn">📶 Enlazar por Wi-Fi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: HISTORIAL DE EVENTOS -->
+    <div id="history-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Historial de Eventos</h3>
+                <button id="btn-close-history" class="btn-close">✕</button>
+            </div>
+            <div class="log-terminal" id="log-terminal">
+                <div class="log-line system">[SISTEMA] Monitor keylefs.rt inicializado correctamente.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: LÍMITES DE ALERTA -->
+    <div id="limits-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Límites de Alerta</h3>
+                <button id="btn-close-limits" class="btn-close">✕</button>
+            </div>
+            <div class="inputs-grid">
+                <div class="input-field">
+                    <label>Temperatura Máxima (°C):</label>
+                    <input type="number" id="limit-temp-max" value="35">
+                </div>
+                <div class="input-field">
+                    <label>Humedad Mínima (%):</label>
+                    <input type="number" id="limit-hum-min" value="40">
+                </div>
+            </div>
+            <button id="btn-save-limits" class="btn-primary" style="width: 100%; margin-top: 20px;">Guardar Cambios</button>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CALIBRADOR DE SENSORES -->
+    <div id="calibration-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Calibrar Desviación (Offset)</h3>
+                <button id="btn-close-calibration" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Suma o resta un margen de calibración a las lecturas físicas:</p>
+            <div class="inputs-grid">
+                <div class="input-field">
+                    <label>Ajuste de Temperatura (°C):</label>
+                    <input type="number" id="cal-temp-offset" step="0.1" value="0.0">
+                </div>
+                <div class="input-field">
+                    <label>Ajuste de Humedad (%):</label>
+                    <input type="number" id="cal-hum-offset" step="0.1" value="0.0">
+                </div>
+            </div>
+            <button id="btn-save-calibration" class="btn-primary" style="width: 100%; margin-top: 20px;">Aplicar Calibración</button>
+        </div>
+    </div>
+
+    <!-- MODAL 4: PICOS DE SESIÓN -->
+    <div id="stats-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Picos Registrados</h3>
+                <button id="btn-close-stats" class="btn-close">✕</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <p>Temp. Máxima</p>
+                    <h4 id="stat-temp-max">--°C</h4>
+                </div>
+                <div class="stat-box">
+                    <p>Temp. Mínima</p>
+                    <h4 id="stat-temp-min">--°C</h4>
+                </div>
+                <div class="stat-box">
+                    <p>Hum. Máxima</p>
+                    <h4 id="stat-hum-max">--%</h4>
+                </div>
+                <div class="stat-box">
+                    <p>Hum. Mínima</p>
+                    <h4 id="stat-hum-min-val">--%</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: ALERTAS DE AUDIO -->
+    <div id="audio-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Alarmas de Audio</h3>
+                <button id="btn-close-audio" class="btn-close">✕</button>
+            </div>
+            <div class="toggle-group">
+                <label class="switch-container">
+                    <input type="checkbox" id="audio-toggle" checked>
+                    <span class="slider-switch"></span>
+                </label>
+                <span>Habilitar Alarmas Físicas</span>
+            </div>
+            <div class="audio-tests">
+                <button id="test-beep-heat" class="btn-secondary">🔥 Sirena de Calor</button>
+                <button id="test-beep-humidity" class="btn-secondary">💧 Tono Humedad</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: EXPORTAR -->
+    <div id="export-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Exportar Registro</h3>
+                <button id="btn-close-export" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Descarga las lecturas almacenadas durante esta sesión en un archivo CSV legible por Excel.</p>
+            <button id="btn-download-csv" class="btn-primary" style="width: 100%;">📥 Descargar Reporte (.csv)</button>
+        </div>
+    </div>
+
+    <!-- MODAL 7: GUÍA -->
+    <div id="guide-modal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Formato de Comunicación</h3>
+                <button id="btn-close-guide" class="btn-close">✕</button>
+            </div>
+            <div class="guide-content">
+                <p>Para emparejar tu hardware, programa tu placa para que devuelva un string plano separado por comas:</p>
+                <pre class="code-box">temperatura,humedad\n (Ej: 24.3,58.2)</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 8: ACERCA DE -->
+    <div id="about-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>keylefs.rt</h3>
+                <button id="btn-close-about" class="btn-close">✕</button>
+            </div>
+            <div class="about-body">
+                <p>Monitor de seguridad térmica industrial con bases locales autoguardadas, calibración fluida de sensores y animaciones avanzadas.</p>
+                <div class="brand-box">
+                    <span>DESARROLLADO POR:</span>
+                    <strong class="brand-name">Keylefs</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PROMEDIOS DE SESIÓN -->
+    <div id="averages-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Promedios Calculados</h3>
+                <button id="btn-close-averages" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Media exacta calculada en base a las lecturas guardadas:</p>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <p>Media Temperatura</p>
+                    <h4 id="avg-temp-val">--°C</h4>
+                </div>
+                <div class="stat-box">
+                    <p>Media Humedad</p>
+                    <h4 id="avg-hum-val">--%</h4>
+                </div>
+            </div>
+            <p id="avg-total-samples" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 15px; text-align: center;">Muestras analizadas: 0</p>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODALES DE LAS 7 NUEVAS HERRAMIENTAS
+    ========================================== -->
+
+    <!-- N1: MODAL TEMPORAL POMODORO -->
+    <div id="pomodoro-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⏱️ Temporizador Pomodoro</h3>
+                <button id="btn-close-pomodoro" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Enfócate en la calibración y monitoreo sin fatiga.</p>
+            <div class="stat-box" style="margin-bottom: 15px;">
+                <h2 id="pomodoro-timer" style="font-size: 3rem; color: var(--neon-blue); text-align: center; margin: 10px 0;">25:00</h2>
+            </div>
+            <div class="audio-tests">
+                <button id="btn-start-pomodoro" class="btn-primary">Iniciar</button>
+                <button id="btn-reset-pomodoro" class="btn-secondary">Reiniciar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- N2: BLOCK DE NOTAS RÁPIDO -->
+    <div id="notes-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📝 Notas de Calibración</h3>
+                <button id="btn-close-notes" class="btn-close">✕</button>
+            </div>
+            <textarea id="notes-textarea" placeholder="Escribe aquí observaciones físicas de tus sensores, códigos de pruebas..." style="width: 100%; height: 180px; background: #0c111d; border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-main); padding: 12px; outline: none; resize: none; font-size: 0.9rem;"></textarea>
+            <button id="btn-save-notes" class="btn-primary" style="width: 100%; margin-top: 15px;">Guardar Nota</button>
+        </div>
+    </div>
+
+    <!-- N4: CONFIGURAR EJES DEL GRÁFICO -->
+    <div id="chartscale-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📉 Eje de Escala Vertical (Y)</h3>
+                <button id="btn-close-chartscale" class="btn-close">✕</button>
+            </div>
+            <div class="inputs-grid">
+                <div class="input-field">
+                    <label>Eje Y Mínimo:</label>
+                    <input type="number" id="chart-min-y" value="0">
+                </div>
+                <div class="input-field">
+                    <label>Eje Y Máximo:</label>
+                    <input type="number" id="chart-max-y" value="100">
+                </div>
+            </div>
+            <button id="btn-apply-chartscale" class="btn-primary" style="width: 100%; margin-top: 20px;">Aplicar Escala</button>
+        </div>
+    </div>
+
+    <!-- N5: DIAGNÓSTICO PING -->
+    <div id="ping-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔌 Ping de Latencia</h3>
+                <button id="btn-close-ping" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Verifica la respuesta de tu hardware simulado o en red física:</p>
+            <button id="btn-execute-ping" class="btn-primary" style="width: 100%;">Enviar Ping</button>
+            <div id="ping-result" style="margin-top: 15px; font-family: monospace; font-size: 0.85rem; color: var(--neon-green); text-align: center;">--</div>
+        </div>
+    </div>
+
+    <!-- N6: RESPALDO/BACKUP DE CONFIGURACIÓN -->
+    <div id="backup-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>💾 Respaldo de Configuración</h3>
+                <button id="btn-close-backup" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Crea un archivo JSON para guardar límites y offsets o cárgalo nuevamente.</p>
+            <button id="btn-download-backup" class="btn-primary" style="width: 100%; margin-bottom: 10px;">Exportar Configuración (.json)</button>
+            <input type="file" id="file-import-backup" style="display: none;" accept=".json">
+            <button id="btn-trigger-import" class="btn-secondary" style="width: 100%;">Importar Configuración (.json)</button>
+        </div>
+    </div>
+
+    <!-- N7: PROGRAMADOR DE HORARIO PARA ALARMAS -->
+    <div id="scheduler-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📅 No Molestar (Alarmas)</h3>
+                <button id="btn-close-scheduler" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Desactiva el audio de alertas automáticamente dentro de un rango de horas determinado:</p>
+            <div class="toggle-group">
+                <label class="switch-container">
+                    <input type="checkbox" id="schedule-toggle">
+                    <span class="slider-switch"></span>
+                </label>
+                <span>Habilitar Franja de Silencio</span>
+            </div>
+            <div class="inputs-grid">
+                <div class="input-field">
+                    <label>Hora de Inicio (Silencio):</label>
+                    <input type="time" id="schedule-start" value="22:00">
+                </div>
+                <div class="input-field">
+                    <label>Hora de Término (Silencio):</label>
+                    <input type="time" id="schedule-end" value="07:00">
+                </div>
+            </div>
+            <button id="btn-save-scheduler" class="btn-primary" style="width: 100%; margin-top: 20px;">Aplicar Horario</button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MODALES DE PERSONALIZACIÓN Y ESTILOS
+    ========================================== -->
+
+    <!-- COLOR DE INTERFAZ -->
+    <div id="theme-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Color de Interfaz (Neón)</h3>
+                <button id="btn-close-theme" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Selecciona el color de realce para tu sistema:</p>
+            <select id="theme-selector" class="select-dark">
+                <option value="cyan">Celeste Neón</option>
+                <option value="green">Verde Esmeralda</option>
+                <option value="orange">Naranja Alerta</option>
+                <option value="red">Rojo Radiactivo</option>
+                <option value="purple">Morado Cyberpunk</option>
+                <option value="yellow">Amarillo Eléctrico</option>
+                <option value="pink">Rosa Fucsia</option>
+                <option value="gold">Oro Industrial</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- SELECTOR DE FUENTES -->
+    <div id="font-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✍️ Selección de Tipografía</h3>
+                <button id="btn-close-font" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Elige la fuente de texto ideal para tu estación:</p>
+            <select id="font-selector" class="select-dark">
+                <option value="system">Diseño del Sistema (Sans-Serif)</option>
+                <option value="retro">Hacker Monospace (Terminal)</option>
+                <option value="industrial">Maquinaria Rígida (Courier New)</option>
+                <option value="sans">Redondeada Limpia (Arial)</option>
+                <option value="future">Diseño Futurista (Trebuchet)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- SELECTOR DE DISEÑOS / ESTILOS GLOBALES (10 OPCIONES) -->
+    <div id="design-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🏢 Temas y Diseños Estéticos (10)</h3>
+                <button id="btn-close-design" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Modifica toda la estructura visual, colores de paneles y fondos:</p>
+            <select id="design-selector" class="select-dark">
+                <option value="defecto">1. Defecto (Dark Cyber)</option>
+                <option value="matrix">2. Matrix Hacker (Verde/Negro)</option>
+                <option value="industrial">3. Gris Industrial (Maquinaria)</option>
+                <option value="laboratorio">4. Laboratorio Limpio (Modo Claro)</option>
+                <option value="minimalista">5. Minimalista Oscuro (Elegante)</option>
+                <option value="synthwave">6. Synthwave Atardecer (Rosa/Morado)</option>
+                <option value="oceano">7. Azul Océano Profundo</option>
+                <option value="emergencia">8. Emergencia Preventiva (Rojo militar)</option>
+                <option value="bosque">9. Bosque Digital (Verdes suaves)</option>
+                <option value="carbono">10. Carbono Tecnológico (Grises oscuros)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- MODAL AVANZADO: TASA DE MUESTREO -->
+    <div id="sampling-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tasa de Muestreo</h3>
+                <button id="btn-close-sampling" class="btn-close">✕</button>
+            </div>
+            <p class="modal-desc">Configura cuántos puntos en tiempo real se mostrarán simultáneamente en el gráfico horizontal:</p>
+            <input type="number" id="sampling-points" class="select-dark" value="15" min="5" max="40">
+            <button id="btn-save-sampling" class="btn-primary" style="width: 100%; margin-top: 15px;">Aplicar Cambios</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA PRINCIPAL -->
+    <div class="app-container" id="main-container">
+        <header class="app-header">
+            <div class="header-left">
+                <button id="btn-menu" class="btn-menu">☰</button>
+                <div class="logo">🎛️ ESTACIÓN CONTROL INDUSTRIAL</div>
+            </div>
+            <div class="header-actions" style="display: flex; align-items: center; gap: 15px;">
+                <span id="active-device-status" style="font-size: 0.8rem; color: var(--text-muted);">🔴 Desconectado</span>
+                <button id="btn-connect" class="btn-primary">Conectar</button>
+            </div>
+        </header>
+
+        <main class="dashboard">
+            <div class="card temp" id="card-temp">
+                <div class="card-header-meta">
+                    <span>LECTURA ACTUAL</span>
+                    <span class="card-icon">🌡️</span>
+                </div>
+                <h2>Temperatura</h2>
+                <div class="value"><span id="temp-val">24.0</span>°C</div>
+                <div class="status-badge status-ok" id="temp-status">Normal</div>
+            </div>
+
+            <div class="card hum" id="card-hum">
+                <div class="card-header-meta">
+                    <span>LECTURA ACTUAL</span>
+                    <span class="card-icon">💧</span>
+                </div>
+                <h2>Humedad Relativa</h2>
+                <div class="value"><span id="hum-val">50.0</span>%</div>
+                <div class="status-badge status-ok" id="hum-status">Óptima</div>
+            </div>
+        </main>
+
+        <!-- GRÁFICO DE LÍNEA TEMPORAL -->
+        <section class="panel chart-section">
+            <h3>Línea Temporal de Tendencia</h3>
+            <div class="chart-container">
+                <canvas id="lineChart"></canvas>
+            </div>
+        </section>
+
+        <!-- PANEL DE CALIBRACIÓN / SIMULADOR -->
+        <section class="panel controls" id="panel-simulador">
+            <h3>Consola de Calibración Local (Simulador de Entrada)</h3>
+            <div class="controls-grid">
+                <div class="control-group">
+                    <label for="temp-input">Entrada Analógica Temp (°C):</label>
+                    <input type="range" id="temp-input" min="0" max="60" value="24">
+                </div>
+                <div class="control-group">
+                    <label for="hum-input">Entrada Analógica Hum (%):</label>
+                    <input type="range" id="hum-input" min="0" max="100" value="50">
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
